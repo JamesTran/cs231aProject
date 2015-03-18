@@ -1,5 +1,6 @@
 import urllib
 import os
+import filecmp
 
 # Folder with the files listing out the image URLs
 URL_DIR = 'dataset'
@@ -8,10 +9,12 @@ URL_DIR = 'dataset'
 DOWNLOAD_DIR = 'images'
 
 # Maximum number of database images to download per landmark
-MAX_DB_IMAGES = 2
+MAX_DB_IMAGES = 100
 
 # Maximum number of test images to download per landmark
-MAX_TEST_IMAGES = 1
+MAX_TEST_IMAGES = 10
+
+UNAVAILABLE_IMAGE = './unavailable_image.jpg'
 
 # Parses the input file (list of URLs) and downloads the images
 def parse_input(url_file, dest, max_downloads):
@@ -22,16 +25,23 @@ def parse_input(url_file, dest, max_downloads):
         url = splitted[1]
         width = splitted[2]
         height = splitted[3]
-        urllib.urlretrieve(url, dest + '/' + name)
-        num_downloaded += 1
-        if num_downloaded >= max_downloads:
-            break
+        filepath = dest + '/' + name
+        urllib.urlretrieve(url, filepath)
+        if filecmp.cmp(UNAVAILABLE_IMAGE, filepath):
+            # Remove images that are no longer available
+            os.remove(filepath)
+        else:
+            num_downloaded += 1
+            if num_downloaded >= max_downloads:
+                break
 
 download_path = os.getcwd() + '/' + DOWNLOAD_DIR
 if not os.path.exists(download_path):
     os.makedirs(download_path)
 
 for landmark in os.listdir(os.getcwd() + '/' + URL_DIR):
+    print('Currently downloading images for: ' + landmark)
+
     landmark_dir = os.getcwd() + '/' + URL_DIR + '/' + landmark
     if not os.path.isdir(landmark_dir):
         continue
